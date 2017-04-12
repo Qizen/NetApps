@@ -57,26 +57,31 @@ crawl (Just token) (Just iters) = do
 recurseOnUser :: Auth -> Name User -> Int -> IO ()
 recurseOnUser _ _ 0 = return ()
 recurseOnUser t uName iters = do
+  print $ "Crawling all over " ++ (unpack $ untagName uName)
   runNeo "MERGE (u:User {name:{uname}}) RETURN u" (fromList [("uname", B.T (untagName uName))])
   eRepos <- userRepos' (Just t) (mkName Owner (untagName uName)) RepoPublicityPublic
   case eRepos of
     Left e -> print e >> return ()
     Right repos -> do
       --print repos
-      mapM_ (\r -> addRepo (repoName r) (simpleOwnerLogin $ repoOwner r) (uName)) repos
-      mapM_ (\r -> recurseOnRepo t (repoName r) (simpleOwnerLogin $ repoOwner r) (iters - 1) ) repos
+      --mapM_ (\r -> addRepo (repoName r) (simpleOwnerLogin $ repoOwner r) (uName)) repos
+      mapM_ (\r -> recurseOnRepo t (repoName r) (simpleOwnerLogin $ repoOwner r) uName (iters - 1) ) repos
 
-recurseOnRepo :: Auth -> Name Repo -> Name Owner -> Int -> IO ()
-recurseOnRepo _ _ _ 0 = return ()
-recurseOnRepo t rName oName iters = do
+recurseOnRepo :: Auth -> Name Repo -> Name Owner -> Name User -> Int -> IO ()
+recurseOnRepo _ _ _ _ 0 = return ()
+recurseOnRepo t rName oName uName iters = do
   eUsers <- contributors' (Just t) (oName) (rName)
   case eUsers of
-    Left e-> print e >> return ()
+    Left e -> print e >> return ()
     Right users -> do
       let us = V.mapMaybe contributorToSimpleUser users 
-      V.mapM_ (\u -> addUser (simpleUserLogin u)) us
+      --V.mapM_ (\u -> addUser (simpleUserLogin u)) us
+      mapM_ (\u -> addRepo rName oName (simpleUserLogin u)) us
       print "after map"
-      V.mapM_ (\u -> recurseOnUser t (simpleUserLogin u) (iters-1)) us
+      V.mapM_ (\u -> do
+                  case (simpleUserLogin u) == uName of
+                    True -> return ()
+                    False -> recurseOnUser t (simpleUserLogin u) (iters-1)) us
 
 addRepo :: Name Repo -> Name Owner -> Name User -> IO ()
 addRepo rName oName uName = do
@@ -84,7 +89,7 @@ addRepo rName oName uName = do
   let n = (untagName oName) `append` "/" `append` (untagName rName)
   let u = untagName uName
   print $ "Adding Repo: " ++ show n
-  result <- runNeo  " MATCH (u:User {name:{uname}}) \
+  result <- runNeo  " MERGE (u:User {name:{uname}}) \
                     \ MERGE (n:Repo {name:{name}}) \
                     \ MERGE (u) -[:CONTRIBS]-> (n) \
                     \ Return n" (fromList [("name", B.T n), ("uname", B.T u)])
