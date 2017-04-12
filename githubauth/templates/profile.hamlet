@@ -7,4 +7,7 @@
       This page is protected and access is allowed only for authenticated users.
 
     <p>
-      Your data is protected with us <strong><span class="username">#{show name}</span></strong>!
+      Your data is protected with us <strong><span class="username">#{show nm}</span></strong>!
+
+    <p>
+      We queried github with your auth token to get your account creation date. It's #{show createdAt}!

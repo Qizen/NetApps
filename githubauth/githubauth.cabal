@@ -48,6 +48,7 @@ library
                 TupleSections
                 RecordWildCards
                 CPP
+                OverloadedStrings
 
     build-depends:
                    -- Due to a bug in GHC 8.0.1, we block its usage
@@ -94,7 +95,12 @@ library
                  , case-insensitive
                  , wai
                  , yesod-auth-oauth2
-                 , github
+                , github
+                , CommonApi
+                , servant == 0.9.*
+                , servant-server
+                , servant-client
+                , http-client
 
 executable         githubauth
     if flag(library-only)

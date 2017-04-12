@@ -1,0 +1,44 @@
+{-# LANGUAGE DataKinds       #-}
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeOperators   #-}
+module Lib
+    ( startApp
+    , app
+    ) where
+
+import Data.Aeson
+import Data.Aeson.TH
+import Network.Wai
+import Network.Wai.Handler.Warp
+import Servant
+import GitHub.Endpoints.Users
+import Data.ByteString.Char8
+import GHC.Generics
+import System.IO
+import Control.Concurrent
+import Control.Monad.IO.Class
+import CommonApi
+
+import CommonApi
+
+startApp :: IO ()
+startApp = run 8080 app
+
+app :: Application
+app = serve api server
+
+api :: Proxy API
+api = Proxy
+
+server :: Server API
+server = return users
+  :<|> crawl
+
+crawl :: Maybe String -> Maybe Int -> Handler Bool
+crawl Nothing _ = return False
+crawl _ Nothing = return False
+crawl (Just token) (Just iters) = do
+  usr <- liftIO $ userInfoCurrent' (OAuth $ pack token)
+  liftIO $ print usr
+  return True
+  

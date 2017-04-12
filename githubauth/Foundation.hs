@@ -15,6 +15,10 @@ import Yesod.Core.Types     (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
+import Servant.Client
+import Network.HTTP.Client (newManager, defaultManagerSettings)
+
+import qualified CommonApi as CA
 
 -- | The foundation datatype for your application. This can be a good place to
 -- keep settings and values requiring initialization before your application
@@ -201,6 +205,11 @@ instance YesodAuth App where
 
     authenticate creds = runDB $ do
         x <- getBy $ UniqueUser $ credsIdent creds
+        mapM_ (uncurry setSession) $ credsExtra creds
+        print "### credsIdent ###"
+        print $ credsIdent creds
+        print "### credsExtra ###"
+        print $ (credsExtra creds)
         case x of
             Just (Entity uid _) -> return $ Authenticated uid
             Nothing -> Authenticated <$> insert User
