@@ -10,6 +10,7 @@ module Lib
 
 import Data.Aeson
 import Data.Aeson.TH
+import Data.Map
 import Data.Maybe
 import qualified Data.Vector as V
 import Network.Wai
@@ -24,6 +25,7 @@ import System.IO
 import Control.Concurrent
 import Control.Monad.IO.Class
 import Data.Text
+import qualified Database.Bolt as B
 
 import CommonApi
 
@@ -47,21 +49,22 @@ crawl (Just token) (Just iters) = do
   liftIO $ print usr
   case usr of
     Left _ -> return False
-    Right u -> liftIO $ recurseOnUser (OAuth $ BS.pack token) (userLogin u) iters >> return True
-  return True
+    Right u -> do
+      liftIO $ recurseOnUser (OAuth $ BS.pack token) (userLogin u) iters
+      
+      return True
 
 recurseOnUser :: Auth -> Name User -> Int -> IO ()
 recurseOnUser _ _ 0 = return ()
 recurseOnUser t uName iters = do
+  runNeo "MERGE (u:User {name:{uname}}) RETURN u" (fromList [("uname", B.T (untagName uName))])
   eRepos <- userRepos' (Just t) (mkName Owner (untagName uName)) RepoPublicityPublic
   case eRepos of
     Left e -> print e >> return ()
     Right repos -> do
-      mapM_ (\r -> addRepo (repoName r) (simpleOwnerLogin $ repoOwner r)) repos
+      --print repos
+      mapM_ (\r -> addRepo (repoName r) (simpleOwnerLogin $ repoOwner r) (uName)) repos
       mapM_ (\r -> recurseOnRepo t (repoName r) (simpleOwnerLogin $ repoOwner r) (iters - 1) ) repos
-
-addRepo :: Name Repo -> Name Owner -> IO ()
-addRepo rName oName = print rName
 
 recurseOnRepo :: Auth -> Name Repo -> Name Owner -> Int -> IO ()
 recurseOnRepo _ _ _ 0 = return ()
@@ -72,7 +75,30 @@ recurseOnRepo t rName oName iters = do
     Right users -> do
       let us = V.mapMaybe contributorToSimpleUser users 
       V.mapM_ (\u -> addUser (simpleUserLogin u)) us
+      print "after map"
       V.mapM_ (\u -> recurseOnUser t (simpleUserLogin u) (iters-1)) us
 
+addRepo :: Name Repo -> Name Owner -> Name User -> IO ()
+addRepo rName oName uName = do
+  print rName
+  let n = (untagName oName) `append` "/" `append` (untagName rName)
+  let u = untagName uName
+  print $ "Adding Repo: " ++ show n
+  result <- runNeo  " MATCH (u:User {name:{uname}}) \
+                    \ MERGE (n:Repo {name:{name}}) \
+                    \ MERGE (u) -[:CONTRIBS]-> (n) \
+                    \ Return n" (fromList [("name", B.T n), ("uname", B.T u)])
+  print "DONE"
+  --print $ "res: " ++ show result
+  return ()
+
 addUser :: Name User -> IO ()
-addUser name = print name
+addUser name = do
+  print name
+
+runNeo :: Text -> Map Text B.Value -> IO ([B.Record])
+runNeo q m = do
+  pipe <-B.connect $ B.def { B.user = "neo4j", B.password = "password" }
+  result <- B.run pipe $ B.queryP q m
+  B.close pipe
+  return result
