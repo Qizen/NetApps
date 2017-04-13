@@ -2,12 +2,18 @@
 
     <h1>
       Access granted!
+    <body>
+      <p>
+        This page is protected and access is allowed only for authenticated users.
 
-    <p>
-      This page is protected and access is allowed only for authenticated users.
+      <p>
+        Your data is protected with us <strong><span class="username">#{show nm}</span></strong>!
 
-    <p>
-      Your data is protected with us <strong><span class="username">#{show nm}</span></strong>!
+      <p>
+        We queried github with your auth token to get your account creation date. It's #{show createdAt}!
 
-    <p>
-      We queried github with your auth token to get your account creation date. It's #{show createdAt}!
+      <input type="button" value="Start Crawling!" id="b_crawl" onclick="CallCrawl();">
+
+      <script type="text/javascript" src="https://d3js.org/d3.v4.min.js">
+      <script type="text/javascript">
+        d3.select("body").append("p").text("This is a paragraph generated on the fly by D3!");//TODO write code

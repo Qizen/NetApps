@@ -1,0 +1,16 @@
+function CallCrawl(){
+  $.ajax({
+    url: '@{CrawlR}',
+    type: 'POST',
+    contentType: "application/json",
+    data: "",
+    success: function(){
+      console.log("success")
+    },
+    error: function(){
+      console.log("error")
+    },
+  });
+}
+      
+    

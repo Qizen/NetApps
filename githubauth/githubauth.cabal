@@ -24,6 +24,8 @@ library
                      Handler.Home
                      Handler.Comment
                      Handler.Profile
+                     Handler.Crawl
+                     Handler.Testpost
 
     if flag(dev) || flag(library-only)
         cpp-options:   -DDEVELOPMENT
@@ -137,6 +139,8 @@ test-suite test
                        Handler.CommonSpec
                        Handler.HomeSpec
                        Handler.ProfileSpec
+                       Handler.Crawl
+                       Handler.Testpost
                        TestImport
     hs-source-dirs:    test
     ghc-options:       -Wall

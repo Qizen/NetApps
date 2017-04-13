@@ -9,3 +9,5 @@
 /comments CommentR POST
 
 /profile ProfileR GET
+/crawl CrawlR POST
+/testpost TestpostR POST
