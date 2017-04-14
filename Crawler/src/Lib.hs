@@ -40,6 +40,7 @@ api = Proxy
 
 server :: Server API
 server = crawl
+ -- :<|> getData
 
 crawl :: Maybe String -> Maybe Int -> Handler Bool
 crawl Nothing _ = return False
@@ -53,6 +54,10 @@ crawl (Just token) (Just iters) = do
       liftIO $ recurseOnUser (OAuth $ BS.pack token) (userLogin u) iters
       
       return True
+{-
+getData :: Handler String
+getData = do
+-} 
 
 recurseOnUser :: Auth -> Name User -> Int -> IO ()
 recurseOnUser _ _ 0 = return ()

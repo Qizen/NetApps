@@ -13,4 +13,144 @@ function CallCrawl(){
   });
 }
       
-    
+function GetRes(){
+  $.ajax({
+    url: "http://localhost:7474/db/data/transaction/commit",
+    type: 'POST',
+    contentType: "application/json",
+    dataType: 'json',
+    crossDomain:true,
+    data: JSON.stringify({
+      "statements":[{"statement":"Match path = (n:User {name:\"Qizen\"})-[r]->(m) RETURN path",
+                     "resultDataContents":["graph"]
+		   }]
+    }),
+    success: function(res){
+      d3.select("body").append("p").text("Javascript scopes are stupid");
+      OnDbRecv(res);
+    },
+    error: function(res){
+      console.log("error");
+      return res;
+    },
+    beforeSend: function (xhr) {
+      xhr.setRequestHeader ("Authorization", "Basic " + btoa("neo4j" + ":" + "password"));
+    },
+  });
+}
+
+function ShowRes(){
+  GetRes();
+}
+
+function idIndex(a,id) {
+  for (var i=0;i<a.length;i++) {
+    if (a[i].id == id) return i;}
+  return null;
+}
+
+function OnDbRecv(res){
+  console.log(res);
+  d3.select("body").append("p").text("Javascript scopes are stupid");
+  d3.select("body").append("p").text("Heres some stuff: " + JSON.stringify(res));
+
+  // Convert everything to nodes and links like d3 wants
+  var nodes=[], links=[];
+  console.log("1");
+  res.results[0].data.forEach(function (row) {
+  row.graph.nodes.forEach(function (n) {
+    if (idIndex(nodes,n.id) == null)
+      nodes.push({id:n.id,label:n.labels[0],title:n.properties.name});
+    });
+    links = links.concat( row.graph.relationships.map(function(r) {
+      return {start:idIndex(nodes,r.startNode),end:idIndex(nodes,r.endNode),type:r.type};
+    }));
+  });
+  console.log("we out");
+  viz = {nodes:nodes, links:links};
+  console.log("we out2");
+  //start making the svg frame etc
+  //var width = 800, height = 800;
+  // force layout setup
+
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
+
+  console.log("we out3");
+
+var color = d3.scaleOrdinal(d3.schemeCategory20);
+
+console.log("we out4");
+
+var simulation = d3.forceSimulation()
+    .force("link", d3.forceLink().id(function(d) { return d.id; }))
+    .force("charge", d3.forceManyBody())
+    .force("center", d3.forceCenter(width / 2, height / 2));
+console.log("2");
+
+  console.log("3");
+
+  var link = svg.append("g")
+      .attr("class", "links")
+    .selectAll("line")
+    .data(viz.links)
+    .enter().append("line")
+      .attr("stroke-width", function(d) { return Math.sqrt(d.value); });
+  console.log("4");
+  var node = svg.append("g")
+      .attr("class", "nodes")
+    .selectAll("circle")
+    .data(viz.nodes)
+    .enter().append("circle")
+      .attr("r", 5)
+      .attr("fill", function(d) { return color(d.group); })
+      .call(d3.drag()
+          .on("start", dragstarted)
+          .on("drag", dragged)
+          .on("end", dragended));
+
+  console.log("5");
+  node.append("title")
+      .text(function(d) { return d.id; });
+
+  console.log("6");
+  simulation
+      .nodes(viz.nodes)
+      .on("tick", ticked);
+
+/*  console.log("7");
+  simulation.force("link")
+      .links(viz.links);
+*/
+  console.log("8");
+  function ticked() {
+   /* link
+        .attr("x1", function(d) { return d.source.x; })
+        .attr("y1", function(d) { return d.source.y; })
+        .attr("x2", function(d) { return d.target.x; })
+        .attr("y2", function(d) { return d.target.y; });
+*/
+    node
+        .attr("cx", function(d) { return d.x; })
+        .attr("cy", function(d) { return d.y; });
+  }
+
+function dragstarted(d) {
+  if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+  d.fx = d.x;
+  d.fy = d.y;
+}
+
+function dragged(d) {
+  d.fx = d3.event.x;
+  d.fy = d3.event.y;
+}
+
+function dragended(d) {
+  if (!d3.event.active) simulation.alphaTarget(0);
+  d.fx = null;
+  d.fy = null;
+}
+
+}

@@ -1,5 +1,5 @@
 <div .ui.container>
-
+    <script type="text/javascript" src="https://d3js.org/d3.v4.min.js">
     <h1>
       Access granted!
     <body>
@@ -13,7 +13,9 @@
         We queried github with your auth token to get your account creation date. It's #{show createdAt}!
 
       <input type="button" value="Start Crawling!" id="b_crawl" onclick="CallCrawl();">
+      <input type="button" value="Make a Request!" id="b_req" onclick="ShowRes();">
 
-      <script type="text/javascript" src="https://d3js.org/d3.v4.min.js">
+     <svg width="800" height="800">
       <script type="text/javascript">
         d3.select("body").append("p").text("This is a paragraph generated on the fly by D3!");//TODO write code
+        
