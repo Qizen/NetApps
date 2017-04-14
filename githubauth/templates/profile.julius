@@ -14,14 +14,16 @@ function CallCrawl(){
 }
       
 function GetRes(){
-  $.ajax({
+    var qry = document.getElementById("f1")[0].value;
+    console.log(qry);
+    $.ajax({
     url: "http://localhost:7474/db/data/transaction/commit",
     type: 'POST',
     contentType: "application/json",
     dataType: 'json',
     crossDomain:true,
     data: JSON.stringify({
-      "statements":[{"statement":"Match path = (n:User {name:\"Qizen\"})-[r]->(m) RETURN path",
+      "statements":[{"statement":qry,
                      "resultDataContents":["graph"]
 		   }]
     }),
@@ -77,6 +79,7 @@ var svg = d3.select("svg"),
     width = +svg.attr("width"),
     height = +svg.attr("height");
 
+svg.selectAll("*").remove();
   console.log("we out3");
 
 var color = d3.scaleOrdinal(d3.schemeCategory20);
@@ -108,7 +111,7 @@ console.log("2");
     .data(viz.nodes)
     .enter().append("circle")
       .attr("r", 5)
-      .attr("fill", function(d) { return color(d.group); })
+      .attr("fill", function(d) { return color(d.label); })
       .call(d3.drag()
           .on("start", dragstarted)
           .on("drag", dragged)
@@ -116,7 +119,7 @@ console.log("2");
 
   console.log("5");
   node.append("title")
-      .text(function(d) { return d.id; });
+      .text(function(d) { return d.title; });
 
   console.log("6");
   simulation
@@ -129,7 +132,7 @@ console.log("2");
 
   console.log("8");
     function ticked() {
-	console.log("tick link: " + link);
+	//console.log("tick link: " + link);
     link
           .attr("x1", function(d) { return d.source.x; })
           .attr("y1", function(d) { return d.source.y; })

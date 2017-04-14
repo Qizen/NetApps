@@ -27,7 +27,10 @@
       <input type="button" value="Start Crawling!" id="b_crawl" onclick="CallCrawl();">
       <input type="button" value="Make a Request!" id="b_req" onclick="ShowRes();">
 
-     <svg width="800" height="800">
+      <form id="f1">
+        Query: <input type="text" name="fname" placeholder="Match path = (n)-[r]->(m) RETURN path">      <input type="button" value="Submit" onclick="ShowRes();">
+
+    <svg width="1200" height="1000">
       <script type="text/javascript">
         d3.select("body").append("p").text("This is a paragraph generated on the fly by D3!");//TODO write code
         
