@@ -53,12 +53,10 @@ function idIndex(a,id) {
 
 function OnDbRecv(res){
   console.log(res);
-  d3.select("body").append("p").text("Javascript scopes are stupid");
-  d3.select("body").append("p").text("Heres some stuff: " + JSON.stringify(res));
 
   // Convert everything to nodes and links like d3 wants
   var nodes=[], links=[];
-  console.log("1");
+ 
   res.results[0].data.forEach(function (row) {
   row.graph.nodes.forEach(function (n) {
     if (idIndex(nodes,n.id) == null)
@@ -68,31 +66,21 @@ function OnDbRecv(res){
       return {source:r.startNode,target:r.endNode,type:r.type};
     }));
   });
-  console.log("we out");
   viz = {nodes:nodes, links:links};
-  console.log("we out2");
-  //start making the svg frame etc
-  //var width = 800, height = 800;
   // force layout setup
 
-var svg = d3.select("svg"),
+  var svg = d3.select("svg"),
     width = +svg.attr("width"),
     height = +svg.attr("height");
 
-svg.selectAll("*").remove();
-  console.log("we out3");
+  svg.selectAll("*").remove();
+  
+  var color = d3.scaleOrdinal(d3.schemeCategory20);
 
-var color = d3.scaleOrdinal(d3.schemeCategory20);
-
-console.log("we out4");
-
-var simulation = d3.forceSimulation()
+  var simulation = d3.forceSimulation()
     .force("link", d3.forceLink().id(function(d) { return d.id; }))
     .force("charge", d3.forceManyBody())
     .force("center", d3.forceCenter(width / 2, height / 2));
-console.log("2");
-
-  console.log("3");
 
   var link = svg.append("g")
       .attr("class", "links")
@@ -101,10 +89,6 @@ console.log("2");
     .enter().append("line")
       .attr("stroke-width", function(d) { return /*Math.sqrt(d.value)*/ 1; });
 
-    console.log("Here's link: " + link);
-
-  console.log("4");
-    
   var node = svg.append("g")
       .attr("class", "nodes")
     .selectAll("circle")
@@ -117,22 +101,17 @@ console.log("2");
           .on("drag", dragged)
           .on("end", dragended));
 
-  console.log("5");
   node.append("title")
       .text(function(d) { return d.title; });
 
-  console.log("6");
   simulation
       .nodes(viz.nodes)
       .on("tick", ticked);
 
-  console.log("7");
   simulation.force("link")
       .links(viz.links);
 
-  console.log("8");
-    function ticked() {
-	//console.log("tick link: " + link);
+  function ticked() {
     link
           .attr("x1", function(d) { return d.source.x; })
           .attr("y1", function(d) { return d.source.y; })
@@ -144,21 +123,21 @@ console.log("2");
         .attr("cy", function(d) { return d.y; });
   }
 
-function dragstarted(d) {
-  if (!d3.event.active) simulation.alphaTarget(0.3).restart();
-  d.fx = d.x;
-  d.fy = d.y;
-}
+  function dragstarted(d) {
+    if (!d3.event.active) simulation.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+  }
 
-function dragged(d) {
-  d.fx = d3.event.x;
-  d.fy = d3.event.y;
-}
+  function dragged(d) {
+    d.fx = d3.event.x;
+    d.fy = d3.event.y;
+  }
 
-function dragended(d) {
-  if (!d3.event.active) simulation.alphaTarget(0);
-  d.fx = null;
-  d.fy = null;
-}
+  function dragended(d) {
+    if (!d3.event.active) simulation.alphaTarget(0);
+    d.fx = null;
+    d.fy = null;
+  }
 
 }
