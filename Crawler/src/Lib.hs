@@ -54,7 +54,7 @@ crawl (Just token) (Just iters) = do
   case usr of
     Left _ -> return False
     Right u -> do
-      liftIO $ recurseOnUser (OAuth $ BS.pack token) (userLogin u) iters
+      liftIO $ recurseOnUser (OAuth $ BS.pack token) (userLogin u) "" iters
       
       return True
 {-
@@ -62,10 +62,11 @@ getData :: Handler String
 getData = do
 -} 
 
-recurseOnUser :: Auth -> Name User -> Int -> IO ()
-recurseOnUser _ _ 0 = return ()
-recurseOnUser t uName iters = do
+recurseOnUser :: Auth -> Name User -> Text -> Int -> IO ()
+recurseOnUser _ _ _ 0 = return ()
+recurseOnUser t uName rFullName iters = do
   --alreadySeen <- runNeo "MATCH (u:User {name:{uname}}) RETURN u" (fromList [("uname", B.T (untagName uName))])
+  print $ "### ITERS : " ++ show iters ++ " ###"
   let alreadySeen = []
   case alreadySeen of
     [] -> do
@@ -76,12 +77,18 @@ recurseOnUser t uName iters = do
         Right uI -> do
           let s = makeMapString uI
           --print s
-          runNeo (pack ("MERGE (u:User {name:{uname}, " ++ s ++"}) RETURN u")) (fromList [("uname", B.T (untagName uName))])
+          case rFullName of
+            "" -> runNeo (pack ("MERGE (u:User {name:{uname}, " ++ s ++ "}) \
+                                \ RETURN u ")) (fromList [("uname", B.T ( untagName uName))])
+            _ -> runNeo (pack (" MATCH (r:Repo {name:{rname}}) \
+                        \ MERGE (u:User {name:{uname}, " ++ s ++"}) \
+                        \ MERGE (u)-[:CONTRIBS]->(r)\
+                        \ RETURN u")) (fromList [("rname", B.T rFullName), ("uname", B.T (untagName uName))])
           eRepos <- userRepos' (Just t) (mkName Owner (untagName uName)) RepoPublicityAll
           case eRepos of
             Left e -> print e >> return ()
             Right repos -> do
-              --print repos
+              --print $ (show (untagName uName)) ++ show repos
               --mapM_ (\r -> addRepo (repoName r) (simpleOwnerLogin $ repoOwner r) (uName)) repos
               mapM_ (\r -> recurseOnRepo t (repoName r) (simpleOwnerLogin $ repoOwner r) uName (iters - 1) ) repos
     _ -> print $ "User already seen: " ++ unpack (untagName uName)
@@ -102,14 +109,14 @@ makeMapString (User uid login name typ createdAt pGists avUrl fers fing h bl bio
          Just b -> ", blog:" ++ show b ++ ""
          Nothing -> ""
     ++ case bio of
-         Just b -> ", bio:\"" ++ show b ++ "\""
+         Just b -> ", bio:" ++ show b ++ ""
          Nothing -> ""
     ++ ", pubRepos:\"" ++ show pubRep ++ "\""
     ++ case loc of
          Just b -> ", location:" ++ show b ++ ""
          Nothing -> ""
     ++ case comp of
-         Just b -> ", company:\"" ++ show b ++ "\""
+         Just b -> ", company:" ++ show b ++ ""
          Nothing -> ""
     ++ case email of
          Just b -> ", email:" ++ show b ++ ""
@@ -136,7 +143,7 @@ recurseOnRepo t rName oName uName iters = do
             Left e -> print e >> return ()
             Right ls -> do
               let lslist = Prelude.map (\l -> B.T (getLanguage l)) (HM.keys ls)
-              print $ (show fullname) ++ " : " ++ (show lslist)
+              --print $ (show fullname) ++ " : " ++ (show lslist)
               {-runNeo "MATCH (r:Repo {name:{rname}}) \
                      \ FOREACH (lang in {langs} | \
                      \ MERGE (l:Language {name:lang}) \
@@ -158,9 +165,9 @@ recurseOnRepo t rName oName uName iters = do
             --mapM_ (\u -> addRepo t rName oName (simpleUserLogin u)) us
           --print "after map"
           V.mapM_ (\u -> do
-                  case (simpleUserLogin u) == uName of
+                  case False {-(simpleUserLogin u) == uName -} of
                     True -> return ()
-                    False -> recurseOnUser t (simpleUserLogin u) (iters-1)) us
+                    False -> recurseOnUser t (simpleUserLogin u) fullname (iters-1)) us
     _ -> print $ "Repo already seen: " ++ (unpack fullname)
 
 addRepo :: Auth -> Name Repo -> Name Owner -> Name User -> IO ()

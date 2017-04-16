@@ -8,7 +8,7 @@ import Servant.API
 import Servant.Client
 import Network.HTTP.Client (newManager, defaultManagerSettings)
 
-numIter = 6
+numIter = 11
 crawlerIp = "127.0.0.1"
 crawlerPort = 23455
 
