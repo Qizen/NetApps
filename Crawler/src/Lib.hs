@@ -75,13 +75,13 @@ recurseOnUser t uName rFullName iters = do
       case uInfo of
         Left e -> return ()
         Right uI -> do
-          let s = makeMapString uI
+          --let s = makeMapString uI
           --print s
           case rFullName of
-            "" -> runNeo (pack ("MERGE (u:User {name:{uname}, " ++ s ++ "}) \
+            "" -> runNeo (pack ("MERGE (u:User {name:{uname}}) \
                                 \ RETURN u ")) (fromList [("uname", B.T ( untagName uName))])
             _ -> runNeo (pack (" MATCH (r:Repo {name:{rname}}) \
-                        \ MERGE (u:User {name:{uname}, " ++ s ++"}) \
+                        \ MERGE (u:User {name:{uname}}) \
                         \ MERGE (u)-[:CONTRIBS]->(r)\
                         \ RETURN u")) (fromList [("rname", B.T rFullName), ("uname", B.T (untagName uName))])
           eRepos <- userRepos' (Just t) (mkName Owner (untagName uName)) RepoPublicityAll
@@ -102,26 +102,34 @@ makeMapString (User uid login name typ createdAt pGists avUrl fers fing h bl bio
     ++ ", followers:\"" ++ show fers ++ "\""
     ++ ", following:\"" ++ show fing ++ "\""
     ++ (case h of
-          Just b -> ", hireable:\"" ++ show b ++ "\""
+          Just b -> ", hireable:\"" ++ ks (show  b) ++ "\""
           Nothing -> ""
        )
     ++ case bl of
-         Just b -> ", blog:" ++ show b ++ ""
+         Just b -> ", blog:" ++ ks (show  b) ++ ""
          Nothing -> ""
     ++ case bio of
-         Just b -> ", bio:" ++ show b ++ ""
+         Just b -> ", bio:" ++ ks (show b) ++ ""
          Nothing -> ""
-    ++ ", pubRepos:\"" ++ show pubRep ++ "\""
+    ++ ", pubRepos:\"" ++ ks (show pubRep) ++ "\""
     ++ case loc of
-         Just b -> ", location:" ++ show b ++ ""
+         Just b -> ", location:" ++ ks (show b) ++ ""
          Nothing -> ""
     ++ case comp of
-         Just b -> ", company:" ++ show b ++ ""
+         Just b -> ", company:" ++ ks (show b) ++ ""
          Nothing -> ""
     ++ case email of
-         Just b -> ", email:" ++ show b ++ ""
+         Just b -> ", email:" ++ ks (show b) ++ ""
          Nothing -> ""
-    ++ ", url:\"" ++ unpack (getUrl url) ++ "\""
+    ++ ", url:\"" ++ ks (unpack (getUrl url)) ++ "\""
+
+-- neo4j kept complaining about backslashes in people's company names etc.
+ks :: String -> String
+ks = Prelude.map (\c -> if c=='\\' then '.' else c)
+
+kq :: String -> String
+kq s = Prelude.map (\c -> if c=='\"' then '.' else c) s
+
 
 recurseOnRepo :: Auth -> Name Repo -> Name Owner -> Name User -> Int -> IO ()
 recurseOnRepo _ _ _ _ 0 = return ()

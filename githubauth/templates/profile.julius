@@ -24,11 +24,11 @@ function GetRes(){
     crossDomain:true,
     data: JSON.stringify({
       "statements":[{"statement":qry,
-                     "resultDataContents":["graph"]
+                     "resultDataContents":["graph", "row"]
 		   }]
     }),
     success: function(res){
-      d3.select("body").append("p").text("Javascript scopes are stupid");
+      //d3.select("body").append("p").text("Javascript scopes are stupid");
       OnDbRecv(res);
     },
     error: function(res){
@@ -63,7 +63,7 @@ function OnDbRecv(res){
       nodes.push({id:n.id,label:n.labels[0],title:n.properties.name});
     });
     links = links.concat( row.graph.relationships.map(function(r) {
-      return {source:r.startNode,target:r.endNode,type:r.type};
+	return {source:r.startNode,target:r.endNode,type:r.type, num:r.properties.num};
     }));
   });
   viz = {nodes:nodes, links:links};
@@ -78,8 +78,8 @@ function OnDbRecv(res){
   var color = d3.scaleOrdinal(d3.schemeCategory20);
 
   var simulation = d3.forceSimulation()
-    .force("link", d3.forceLink().id(function(d) { return d.id; }))
-    .force("charge", d3.forceManyBody())
+      .force("link", d3.forceLink().id(function(d) { return d.id; }).distance(100))
+      .force("charge", d3.forceManyBody().strength(-60))
     .force("center", d3.forceCenter(width / 2, height / 2));
 
   var link = svg.append("g")
@@ -87,14 +87,17 @@ function OnDbRecv(res){
     .selectAll("line")
     .data(viz.links)
     .enter().append("line")
-      .attr("stroke-width", function(d) { return /*Math.sqrt(d.value)*/ 1; });
+      .attr("stroke-width", function(d) {
+	  //console.log(d);
+	  if(d.num) {/*console.log(d);*/ return 2 * Math.sqrt(d.num);}
+	  else {console.log(d);return 10;} });
 
   var node = svg.append("g")
       .attr("class", "nodes")
     .selectAll("circle")
     .data(viz.nodes)
     .enter().append("circle")
-      .attr("r", 5)
+      .attr("r", 25)
       .attr("fill", function(d) { return color(d.label); })
       .call(d3.drag()
           .on("start", dragstarted)
