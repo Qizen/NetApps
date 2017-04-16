@@ -19,7 +19,7 @@ I've included a picture of the results on my end with that query, which show gro
 To simply get an idea of your local github network, run a query like
 
 MATCH path = (u:User)-[r:CONTRIBS]->(p:Repo)
-LIMIT 100
 RETURN path
+LIMIT 100
 
 Hint: you might want to dial down the strength of the repulsive node force in profile.julius, for large result sets things tend to fly away.
